@@ -5,14 +5,20 @@
 #define x1 __SIFT_UTILS_x1
 #define y1 __SIFT_UTILS_y1
 
-void utils::resize(const std::vector<std::vector<uint8_t>> &src, std::vector<std::vector<uint8_t>> &dst, int row, int col) {
+template void SIFT::Utils::resize<uint8_t>(const std::vector<std::vector<uint8_t>> &src, std::vector<std::vector<float>> &dst, int row, int col);
+
+template void SIFT::Utils::resize<float>(const std::vector<std::vector<float>> &src, std::vector<std::vector<float>> &dst, int row, int col);
+
+template<typename T, typename>
+void SIFT::Utils::resize(const std::vector<std::vector<T>> &src, std::vector<std::vector<float>> &dst, int row, int col) {
+    std::vector<std::vector<float>> _dst;
     int srcRow = (int) src.size();
     int srcCol = (int) src.front().size();
     float dx = static_cast<float>(srcRow) / static_cast<float>(row);
     float dy = static_cast<float>(srcCol) / static_cast<float>(col);
-    dst.resize(row);
+    _dst.resize(row);
     for (int i = 0; i < row; i++) {
-        dst[i].resize(col);
+        _dst[i].resize(col);
         for (int j = 0; j < col; j++) {
             float posX = dx * static_cast<float>(i);
             float posY = dy * static_cast<float>(j);
@@ -24,18 +30,19 @@ void utils::resize(const std::vector<std::vector<uint8_t>> &src, std::vector<std
             if (y1 >= srcCol)y1 = y0;
             float ox = posX - x0;
             float oy = posY - y0;
-            float topInterpolationResult = std::lerp(src[x0][y0], src[x0][y1], oy);
-            float bottomnterpolationResult = std::lerp(src[x1][y0], src[x1][y1], oy);
+            float topInterpolationResult = std::lerp(static_cast<float>(src[x0][y0]), src[x0][y1], oy);
+            float bottomnterpolationResult = std::lerp(static_cast<float>(src[x1][y0]), src[x1][y1], oy);
             float res = std::lerp(topInterpolationResult, bottomnterpolationResult, ox);
-            dst[i][j] = static_cast<uint8_t>(res);
+            _dst[i][j] = std::round(res);
         }
     }
+    std::swap(dst, _dst);
 }
 
-bool utils::gaussianElimination(std::array<std::array<float, 4>, 3> &A) {
-    for (int i = 0; i < 3; i++) {
+bool SIFT::Utils::gaussianElimination(std::vector<std::vector<float>> &A) {
+    for (int i = 0; i < (int) A.size(); i++) {
         int chooseIndex = -1;
-        for (int j = i; j < 3; j++) {
+        for (int j = i; j < (int) A.size(); j++) {
             if (A[j][i] != 0) {
                 chooseIndex = j;
                 break;
@@ -47,10 +54,10 @@ bool utils::gaussianElimination(std::array<std::array<float, 4>, 3> &A) {
             if (chooseIndex != i) {
                 std::swap(A[chooseIndex], A[i]);
             }
-            for (int j = 0; j < 3; j++) {
+            for (int j = 0; j < (int) A.size(); j++) {
                 if (j != i) {
                     float K = A[j][i] / A[i][i];
-                    for (int k = i; k < 4; k++) {
+                    for (int k = i; k < (int) A.size() + 1; k++) {
                         A[j][k] -= A[i][k] * K;
                     }
                 }
@@ -60,7 +67,7 @@ bool utils::gaussianElimination(std::array<std::array<float, 4>, 3> &A) {
     return true;
 }
 
-void utils::generateGaussianKernel(float sigma, std::vector<float> &dst) {
+void SIFT::Utils::generateGaussianKernel(float sigma, std::vector<float> &dst) {
     int ksize = int(sigma * 6 + 1) | 1;
     dst.resize(ksize);
     float sum = 0;
@@ -73,29 +80,29 @@ void utils::generateGaussianKernel(float sigma, std::vector<float> &dst) {
     for (float &i: dst) {
         i /= sum;
     }
-    std::cout << sigma << ' ' << ksize << ' ' << std::accumulate(dst.begin(), dst.end(), 0.0) << std::endl;
-    for (auto i: dst) {
-        std::cout << i << ' ';
-    }
-    std::cout << std::endl;
+//    std::cout << sigma << ' ' << ksize << ' ' << std::accumulate(dst.begin(), dst.end(), 0.0) << std::endl;
+//    for (auto i: dst) {
+//        std::cout << i << ' ';
+//    }
+//    std::cout << std::endl;
 }
 
-void utils::gaussBlur(const std::vector<std::vector<uint8_t>> &src, std::vector<std::vector<uint8_t>> &dst, float sigmaX, float sigmaY) {
+void SIFT::Utils::gaussBlur(const std::vector<std::vector<float>> &src, std::vector<std::vector<float>> &dst, float sigmaX, float sigmaY) {
     const int row = (int) src.size();
     const int col = (int) src.front().size();
-    const int packedSizeAVX = sizeof(__m256) / sizeof(float);
+    constexpr int packedSizeAVX = sizeof(__m256) / sizeof(float);
 
     std::vector<float> kernel;
-    std::vector<std::vector<float>> mid, temp;
+    std::vector<std::vector<float>> temp;
 
-    mid.resize(row);
+    dst.resize(row);
     for (int i = 0; i < row; i++) {
-        mid[i].resize(col);
+        dst[i].resize(col);
         for (int j = 0; j < col; j++) {
-            mid[i][j] = src[i][j];
+            dst[i][j] = src[i][j];
         }
     }
-    #define doGaussBlur() \
+#define doGaussBlur() \
     do{\
         const int kernelSize = (int) kernel.size();\
         const int leftPadding = kernelSize / 2;\
@@ -103,7 +110,7 @@ void utils::gaussBlur(const std::vector<std::vector<uint8_t>> &src, std::vector<
             kernel.push_back(0);\
         }\
         const int rightPadding = (int) kernel.size() - kernelSize + leftPadding;\
-        for (auto &i: mid) {\
+        for (auto &i: dst) {\
             for (int j = 0; j < rightPadding; j++) {\
                 i.push_back(0);\
             }\
@@ -113,33 +120,27 @@ void utils::gaussBlur(const std::vector<std::vector<uint8_t>> &src, std::vector<
             }\
             std::reverse(i.begin(), i.end());\
         }\
-        utils::mapHorizonKernelWithAVX(mid, kernel, temp);\
-        std::swap(mid, temp);\
+        SIFT::Utils::mapHorizonKernelWithAVX(dst, kernel, temp);\
+        std::swap(dst, temp);\
     }while(0)
 
-    utils::generateGaussianKernel(sigmaX, kernel);
+    SIFT::Utils::generateGaussianKernel(sigmaX, kernel);
     if (kernel.size() > 1) {
         doGaussBlur();
     }
 
-    utils::generateGaussianKernel(sigmaY, kernel);
+    SIFT::Utils::generateGaussianKernel(sigmaY, kernel);
     if (kernel.size() > 1) {
-        utils::transformMatrix(mid);
+        SIFT::Utils::transformMatrix(dst);
         doGaussBlur();
-        utils::transformMatrix(mid);
+        SIFT::Utils::transformMatrix(dst);
     }
-
     dst.resize(row);
-    for (int i = 0; i < row; i++) {
-        dst[i].resize(col);
-        for (int j = 0; j < col; j++) {
-            dst[i][j] = std::max(uint8_t(0), std::min(uint8_t(255), uint8_t(mid[i][j])));
-        }
-    }
+    for (auto &i: dst)i.resize(col);
 }
 
-void utils::mapHorizonKernelWithAVX(const std::vector<std::vector<float>> &src, const std::vector<float> &kernel,
-                                    std::vector<std::vector<float>> &dst) {
+void SIFT::Utils::mapHorizonKernelWithAVX(const std::vector<std::vector<float>> &src, const std::vector<float> &kernel,
+                                          std::vector<std::vector<float>> &dst) {
     const int ksize = (int) kernel.size();
     const int packedSizeAVX = sizeof(__m256) / sizeof(float);
     const int step = ksize / packedSizeAVX;
@@ -169,7 +170,7 @@ void utils::mapHorizonKernelWithAVX(const std::vector<std::vector<float>> &src, 
     }
 }
 
-void utils::transformMatrix(std::vector<std::vector<float>> &mat) {
+void SIFT::Utils::transformMatrix(std::vector<std::vector<float>> &mat) {
     const int row = (int) mat.size();
     const int col = (int) mat.front().size();
     std::vector<std::vector<float>> temp;
@@ -181,4 +182,34 @@ void utils::transformMatrix(std::vector<std::vector<float>> &mat) {
         }
     }
     std::swap(mat, temp);
+}
+
+void SIFT::Utils::SubtractWithAVX(const std::vector<std::vector<float>> &lhs, const std::vector<std::vector<float>> &rhs,
+                                  std::vector<std::vector<float>> &dst) {
+    const int row = (int) lhs.size();
+    const int col = (int) lhs.front().size();
+    constexpr int packedSizeAVX = sizeof(__m256) / sizeof(float);
+    const int rowStep = col / packedSizeAVX;
+    dst.resize(row);
+    for (int i = 0; i < row; i++) {
+        dst[i].resize(col);
+        auto *ptrOfLhs = &lhs[i][0];
+        auto *ptrOfRhs = &rhs[i][0];
+        auto *ptrOfDst = &dst[i][0];
+        for (int j = 0; j < rowStep; j++) {
+            __m256 L = _mm256_load_ps(ptrOfLhs);
+            __m256 R = _mm256_load_ps(ptrOfRhs);
+
+            _mm256_store_ps(ptrOfDst, _mm256_sub_ps(L, R));
+
+            ptrOfLhs += packedSizeAVX;
+            ptrOfRhs += packedSizeAVX;
+            ptrOfDst += packedSizeAVX;
+        }
+    }
+    for (int i = 0; i < row; i++) {
+        for (int j = rowStep * packedSizeAVX; j < col; j++) {
+            dst[i][j] = lhs[i][j] - rhs[i][j];
+        }
+    }
 }

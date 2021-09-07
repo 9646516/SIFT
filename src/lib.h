@@ -10,7 +10,7 @@
 #include <vector>
 #include "utils.h"
 
-#ifdef INPORT_SIFT_DLL
+#ifdef IMPORT_SIFT_DLL
 #define EXPORT_DLL __declspec(dllimport)
 #else
 #define EXPORT_DLL __declspec(dllexport)

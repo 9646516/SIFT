@@ -5,7 +5,7 @@
 #include <random>
 #include <set>
 
-#define INPORT_SIFT_DLL
+#define IMPORT_SIFT_DLL
 
 uint8_t gen() {
     static std::mt19937 rng(114514);

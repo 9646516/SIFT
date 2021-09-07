@@ -80,17 +80,11 @@ void SIFT::Utils::generateGaussianKernel(float sigma, std::vector<float> &dst) {
     for (float &i: dst) {
         i /= sum;
     }
-//    std::cout << sigma << ' ' << ksize << ' ' << std::accumulate(dst.begin(), dst.end(), 0.0) << std::endl;
-//    for (auto i: dst) {
-//        std::cout << i << ' ';
-//    }
-//    std::cout << std::endl;
 }
 
 void SIFT::Utils::gaussBlur(const std::vector<std::vector<float>> &src, std::vector<std::vector<float>> &dst, float sigmaX, float sigmaY) {
     const int row = (int) src.size();
     const int col = (int) src.front().size();
-    constexpr int packedSizeAVX = sizeof(__m256) / sizeof(float);
 
     std::vector<float> kernel;
     std::vector<std::vector<float>> temp;
@@ -142,7 +136,6 @@ void SIFT::Utils::gaussBlur(const std::vector<std::vector<float>> &src, std::vec
 void SIFT::Utils::mapHorizonKernelWithAVX(const std::vector<std::vector<float>> &src, const std::vector<float> &kernel,
                                           std::vector<std::vector<float>> &dst) {
     const int ksize = (int) kernel.size();
-    const int packedSizeAVX = sizeof(__m256) / sizeof(float);
     const int step = ksize / packedSizeAVX;
     const int row = (int) src.size();
     const int col = (int) src.front().size();
@@ -188,7 +181,6 @@ void SIFT::Utils::SubtractWithAVX(const std::vector<std::vector<float>> &lhs, co
                                   std::vector<std::vector<float>> &dst) {
     const int row = (int) lhs.size();
     const int col = (int) lhs.front().size();
-    constexpr int packedSizeAVX = sizeof(__m256) / sizeof(float);
     const int rowStep = col / packedSizeAVX;
     dst.resize(row);
     for (int i = 0; i < row; i++) {

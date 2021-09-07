@@ -1,6 +1,8 @@
 #ifndef SIFT_SIFT_H
 #define SIFT_SIFT_H
 
+#include <set>
+#include <map>
 #include <functional>
 #include <array>
 #include <optional>
@@ -12,8 +14,9 @@ namespace SIFT {
     struct keyPoint {
         int x, y;
         int indexOfLayers;
-
-        keyPoint(int _x, int _y, int _indexOfLayers);
+        int indexOfImage;
+        int xInPyramid;
+        int yInPyramid;
     };
 
     bool operator<(const keyPoint &lhs, const keyPoint &rhs);
@@ -32,10 +35,10 @@ namespace SIFT {
 
     void
     findPointsOfInterest(const std::vector<std::vector<std::vector<std::vector<float>>>> &DOG,
-                         std::vector<keyPoint> &dst, int border, float sigma);
+                         std::vector<keyPoint> &dst, int border);
 
-    void getFeatures(int x, int y, int layer, const std::vector<std::vector<std::vector<std::vector<float>>>> &DOG, std::vector<float>& dst);
+    void getArc(const keyPoint &kp, const std::vector<std::vector<float>> &src, std::vector<float> &dst, float sigma);
 
+    void getFeature(const keyPoint &kp, const std::vector<std::vector<float>> &src, std::vector<float> &dst, float sigma, float angle);
 }
-
 #endif

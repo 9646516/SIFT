@@ -12,6 +12,8 @@
 #include <immintrin.h>
 
 namespace SIFT::Utils {
+    constexpr int packedSizeAVX = sizeof(__m256) / sizeof(float);
+
     template<typename T, typename = std::enable_if_t<std::is_same_v<std::decay_t<T>, uint8_t> || std::is_same_v<std::decay_t<T>, float>, void *>>
     void resize(const std::vector<std::vector<T>> &src, std::vector<std::vector<float>> &dst, int row, int col);
 

@@ -1,9 +1,11 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
 #include <vector>
-#include "SIFT.h"
+#include "lib.h"
 #include <random>
 #include <set>
+
+#define INPORT_SIFT_DLL
 
 uint8_t gen() {
     static std::mt19937 rng(114514);
@@ -61,8 +63,6 @@ int main() {
     std::vector<std::vector<float>> feature2;
 
     SIFT::encode(V2, pos2, feature2);
-
-    std::cout << "fin" << std::endl;
 
     cv::Mat canvas(std::max(img1.rows, img2.rows), img1.cols + img2.cols, CV_8U, cv::Scalar(0));
     for (int i = 0; i < img1.rows; i++) {

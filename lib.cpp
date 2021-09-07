@@ -1,4 +1,4 @@
-#include "SIFT.h"
+#include "lib.h"
 
 void
 SIFT::encode(const std::vector<std::vector<uint8_t>> &src, std::vector<std::pair<int, int>> &dstOfPos, std::vector<std::vector<float>> &dstOfFeature,
@@ -71,10 +71,8 @@ SIFT::encode(const std::vector<std::vector<uint8_t>> &src, std::vector<std::pair
     //extract features
     {
         std::vector<float> arc;
-        int ok = 0;
         for (auto &i: keyPoints) {
             SIFT::getArc(i, pyramid[i.indexOfLayers][i.indexOfImage + 1], arc, totalSigmaOfLayers[i.indexOfImage + 1]);
-            ok += (int) arc.size();
             for (float angle: arc) {
                 dstOfPos.emplace_back(i.x, i.y);
                 dstOfFeature.resize(dstOfFeature.size() + 1);
@@ -82,8 +80,6 @@ SIFT::encode(const std::vector<std::vector<uint8_t>> &src, std::vector<std::pair
                                  totalSigmaOfLayers[i.indexOfImage + 1], angle);
             }
         }
-        std::cout << "kp = " << keyPoints.size() << std::endl;
-        std::cout << "ok = " << ok << std::endl;
     }
 }
 

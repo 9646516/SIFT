@@ -1,5 +1,5 @@
-#ifndef SIFT_SIFT_H
-#define SIFT_SIFT_H
+#ifndef SIFT_LIB_H
+#define SIFT_LIB_H
 
 #include <set>
 #include <map>
@@ -9,6 +9,12 @@
 #include <algorithm>
 #include <vector>
 #include "utils.h"
+
+#ifdef INPORT_SIFT_DLL
+#define EXPORT_DLL __declspec(dllimport)
+#else
+#define EXPORT_DLL __declspec(dllexport)
+#endif
 
 namespace SIFT {
     struct keyPoint {
@@ -25,7 +31,7 @@ namespace SIFT {
 
     using cube = std::array<std::array<std::array<float, 3>, 3>, 3>;
 
-    void
+    EXPORT_DLL void
     encode(const std::vector<std::vector<uint8_t>> &src, std::vector<std::pair<int, int>> &dstOfPos, std::vector<std::vector<float>> &dstOfFeature,
            float sigma = 1.6, int S = 3, float sigmaBefore = 0.5, int border = 5);
 
